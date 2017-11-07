@@ -4,8 +4,13 @@ Self-Driving Car Engineer Nanodegree Program
 ### Project Details
 #### 1. Get vehicle reference location
 Depending on whether the previous path of the vehicle has any points or not, we initialize the reference location of the vehicle. If it does, we choose the last two point from previous path and use them, else use the vehicle's location from the senor fusion data and extrapolate its location in previous time period.
+We also initialize two values for our vectors ptsx and ptsy that will be later used to create spline.
 
-                        if (path_size < 2) {
+			double ref_x = car_x;
+			double ref_y = car_y;
+			double ref_yaw = car_yaw;
+			
+			if (path_size < 2) {
 				ptsx.push_back(car_x - cos(car_yaw));
 				ptsx.push_back(car_x);
 				
@@ -24,6 +29,72 @@ Depending on whether the previous path of the vehicle has any points or not, we 
 				ptsy.push_back(prev_ref_y);
 				ptsy.push_back(ref_y);
 			}
+
+#### 2. Get more waypoints
+Using frenet coordinates, estimate vehicles's future waypoints by only incrementing s and using map waypoints.
+Convert this to global coordinates using inbuilt function getXY.
+After trying different values of incremental s for future waypoints, I found that adding 50 to the vehicle reference position gave better jerk acceleration.
+
+			vector<double> next_wp0 = getXY(car_s+50,(2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+			vector<double> next_wp1 = getXY(car_s+100,(2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+			vector<double> next_wp2 = getXY(car_s+120,(2+4*lane), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
+#### 3. Shift car reference
+Shifting the car reference to zero makes the calculations easier to estimate trajectory.
+
+			for(int i=0; i<ptsx.size(); i++) {
+				double shift_x = ptsx[i] - ref_x;
+				double shift_y = ptsy[i] - ref_y;
+				
+				ptsx[i] = (shift_x*cos(0-ref_yaw) - shift_y*sin(0-ref_yaw));
+				ptsy[i] = (shift_x*sin(0-ref_yaw) + shift_y*cos(0-ref_yaw));
+			}
+			
+#### 4. Create a spline
+Using spline.h from the project description, create a spline using the vectors ptsx and ptsy.
+
+			tk::spline s;
+			s.set_points(ptsx, ptsy);
+			
+#### 5. Create next trajectory values
+Finally using all the points from previous trajectory, initialize the current trajectory.
+
+			vector<double> next_x_vals;
+			vector<double> next_y_vals;
+          	
+			for(int i=0; i<path_size; i++) {
+				next_x_vals.push_back(previous_path_x[i]);
+				next_y_vals.push_back(previous_path_y[i]);
+			}
+
+Since we expect 50 points in the trajectory, for the remaining ones estimate the trajectory points based on the reference velocity.
+Using the reference velocity find the number of intervals (N) needed to cover the distance if each interval is 20ms apart. Finally using this N calculate the next x and y location of the vehicle. Since we earlier moved the reference to zero, revert the reference back to original location to get the actual x and y location of the vehicle in terms of global coordinates.
+
+			double target_x = 30.0;
+			double target_y = s(target_x);
+			double target_dist = sqrt((target_x*target_x) + (target_y*target_y));
+			
+			double x_add_on = 0;
+			for (int i=0; i<50-path_size; i++) {
+				double N = target_dist/(0.02*ref_vel/2.24);
+				double x_point = x_add_on+(target_x/N);
+				double y_point = s(x_point);
+				x_add_on = x_point;
+				
+				double x_ref = x_point;
+				double y_ref = y_point;
+				
+				// rotate back to normal
+				x_point = (x_ref*cos(ref_yaw) - y_ref*sin(ref_yaw));
+				y_point = (x_ref*sin(ref_yaw) + y_ref*cos(ref_yaw));
+				
+				x_point += ref_x;
+				y_point += ref_y;
+				
+				next_x_vals.push_back(x_point);
+				next_y_vals.push_back(y_point);
+			}
+#### 6. Selecting reference velocity and lane
 
 
 ### Simulator.
