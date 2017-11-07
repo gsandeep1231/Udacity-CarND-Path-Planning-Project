@@ -4,7 +4,8 @@ Self-Driving Car Engineer Nanodegree Program
 ### Project Details
 ####1. Get vehicle reference location
 Depending on whether the previous path of the vehicle has any points or not, we initialize the reference location of the vehicle. If it does, we choose the last two point from previous path and use them, else use the vehicle's location from the senor fusion data and extrapolate its location in previous time period.
-         if (path_size < 2) {
+
+                        if (path_size < 2) {
 				ptsx.push_back(car_x - cos(car_yaw));
 				ptsx.push_back(car_x);
 				
