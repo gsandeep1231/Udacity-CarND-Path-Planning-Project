@@ -95,7 +95,69 @@ Using the reference velocity find the number of intervals (N) needed to cover th
 				next_y_vals.push_back(y_point);
 			}
 #### 6. Selecting reference velocity and lane
+Reference velocity is initially set to zero. When the vehicle start, the velocity is slowly incremented until it reaches the speed limit of 49.5mph.
+We use three flags to determine how our model behaves and changes the reference velocity and lane of our vehicle using data from sensor fusion.
 
+too_close:
+If any vehicle in front of our vehicle, in the same lane, has its end path within 30m of our end path, then we set this flag to 1. This then indicates that the vehicle in front of us is too close.
+
+				if (d < (2+4*lane+2) && d > (2+4*lane-2)) {
+					if((other_car_end_s > car_end_s) && ((other_car_end_s-car_end_s) < 30)) {
+						front_car_speed = other_car_speed;
+						too_close = true;
+					}
+				}
+
+safe_left:
+This is intialized to 1. If we find that we are in the leftmost lane or if any vehicle is found to our left then we set this flag to 0.
+
+				if (lane>0) {
+					int new_lane = lane-1;
+					if (d < (2+4*new_lane+2) && d > (2+4*new_lane-2)) {
+						cout << "vehicle found with id: " << sensor_fusion[i][0] << endl;
+						if ((other_car_s < car_s && (other_car_end_s) > car_s) || (other_car_s > car_s && other_car_s < (car_end_s+10))) {
+							safe_left = false;
+						}
+					}
+				} else {
+					safe_left = false;
+				}
+				
+safe_right:
+This is intialized to 1. If we find that we are in the rightmost lane or if any vehicle is found to our right then we set this flag to 0.
+
+				if (lane<2) {
+					int new_lane = lane+1;
+					if (d < (2+4*new_lane+2) && d > (2+4*new_lane-2)) {
+						cout << "vehicle found with id: " << sensor_fusion[i][0] << endl;
+						if ((other_car_s < car_s && (other_car_end_s) > car_s) || (other_car_s > car_s && other_car_s < (car_end_s+10))) {
+							safe_right = false;
+						}
+					}
+				} else {
+					safe_right = false;
+				}
+
+Using these flags, I then create a FSM model that has three states, keep lane, move left or move right.
+This is depicted in below conditional statements by modifying the reference velocity and lane number.
+
+			if (too_close) {
+				ref_vel -= 0.224;
+				if (ref_vel < front_car_speed) {
+					ref_vel = front_car_speed;
+				}
+				if (safe_left) {
+					lane--;
+					wait_time = 0;
+				} else if (safe_right && wait_time > 100) {
+					lane++;
+					wait_time = 0;
+				} else {
+					wait_time++;
+				}
+			} else if (ref_vel<49.5){
+				ref_vel += 0.224;
+			}
 
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases).
