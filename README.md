@@ -1,6 +1,30 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
+### Project Details
+####1. Get vehicle reference location
+Depending on whether the previous path of the vehicle has any points or not, we initialize the reference location of the vehicle. If it does, we choose the last two point from previous path and use them, else use the vehicle's location from the senor fusion data and extrapolate its location in previous time period.
+         if (path_size < 2) {
+				ptsx.push_back(car_x - cos(car_yaw));
+				ptsx.push_back(car_x);
+				
+				ptsy.push_back(car_y - sin(car_yaw));
+				ptsy.push_back(car_y);
+			} else {
+				ref_x = previous_path_x[path_size-1];
+				ref_y = previous_path_y[path_size-1];
+				double prev_ref_x = previous_path_x[path_size-2];
+				double prev_ref_y = previous_path_y[path_size-2];
+				ref_yaw = atan2(ref_y-prev_ref_y, ref_x-prev_ref_x);
+				
+				ptsx.push_back(prev_ref_x);
+				ptsx.push_back(ref_x);
+				
+				ptsy.push_back(prev_ref_y);
+				ptsy.push_back(ref_y);
+			}
+
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases).
 
