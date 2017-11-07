@@ -264,7 +264,6 @@ int main() {
 					if((other_car_end_s > car_end_s) && ((other_car_end_s-car_end_s) < 30)) {
 						front_car_speed = other_car_speed;
 						too_close = true;
-						//lane = 0;
 					}
 				}
 				if (lane>0) {
@@ -297,7 +296,6 @@ int main() {
 
 			if (too_close) {
 				ref_vel -= 0.224;
-				//lane = 0;
 				if (ref_vel < front_car_speed) {
 					ref_vel = front_car_speed;
 				}
